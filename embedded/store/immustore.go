@@ -1645,7 +1645,7 @@ func (s *ImmuStore) ReplicateTx(exportedTx []byte, waitForIndexing bool) (*TxHea
 	return s.commit(txSpec, hdr, waitForIndexing)
 }
 
-func (s *ImmuStore) TxSince(ts time.Time) (*Tx, error) {
+func (s *ImmuStore) FirstTxSince(ts time.Time) (*Tx, error) {
 	left := uint64(1)
 	right, _, _ := s.commitState()
 
@@ -1680,7 +1680,7 @@ func (s *ImmuStore) TxSince(ts time.Time) (*Tx, error) {
 	return nil, ErrTxNotFound
 }
 
-func (s *ImmuStore) TxUntil(ts time.Time) (*Tx, error) {
+func (s *ImmuStore) LastTxUntil(ts time.Time) (*Tx, error) {
 	left := uint64(1)
 	right, _, _ := s.commitState()
 
