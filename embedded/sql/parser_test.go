@@ -1060,14 +1060,25 @@ func TestSelectUnionStmt(t *testing.T) {
 		{
 			input: "SELECT id, title FROM table1 UNION SELECT id, title FROM table1",
 			expectedOutput: []SQLStmt{
-				&SelectStmt{
-					distinct: false,
-					selectors: []Selector{
-						&ColSelector{col: "id"},
-						&ColSelector{col: "title"},
+				&UnionStmt{
+					distinct: true,
+					left: &SelectStmt{
+						distinct: false,
+						selectors: []Selector{
+							&ColSelector{col: "id"},
+							&ColSelector{col: "title"},
+						},
+						ds: &tableRef{table: "table1"},
 					},
-					ds: &tableRef{table: "table1"},
-				}},
+					right: &SelectStmt{
+						distinct: false,
+						selectors: []Selector{
+							&ColSelector{col: "id"},
+							&ColSelector{col: "title"},
+						},
+						ds: &tableRef{table: "table1"},
+					}},
+			},
 			expectedError: nil,
 		},
 	}
