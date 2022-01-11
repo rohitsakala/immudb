@@ -101,7 +101,7 @@ func TestUseSnapshotStmt(t *testing.T) {
 		{
 			input:          "USE SNAPSHOT SINCE 10",
 			expectedOutput: nil,
-			expectedError:  errors.New("syntax error: unexpected NUMBER, expecting TX at position 21"),
+			expectedError:  errors.New("syntax error: unexpected INTEGER, expecting TX at position 21"),
 		},
 	}
 
@@ -1355,7 +1355,7 @@ func TestMultiLineStmts(t *testing.T) {
 
 			BEGIN TRANSACTION;
 				UPSERT INTO table1 (id, label) VALUES (100, 'label1');
-				
+
 				UPSERT INTO table2 (id) VALUES (10);
 			COMMIT;
 
