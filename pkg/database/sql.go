@@ -432,10 +432,10 @@ func (d *db) SQLQueryPrepared(stmt sql.DataSource, namedParams []*schema.NamedPa
 			Values:  make([]*schema.SQLValue, len(res.Columns)),
 		}
 
-		for i, c := range colDescriptors {
+		for i := range colDescriptors {
 			rrow.Columns[i] = cols[i].Name
 
-			v := row.Values[c.Selector()]
+			v := row.ValuesByPosition[i]
 
 			_, isNull := v.(*sql.NullValue)
 			if isNull {
