@@ -16,6 +16,8 @@ limitations under the License.
 package sql
 
 import (
+	"fmt"
+
 	"github.com/codenotary/immudb/embedded/multierr"
 	"github.com/codenotary/immudb/embedded/store"
 )
@@ -35,6 +37,23 @@ func newUnionRowReader(rowReaders []RowReader) (*unionRowReader, error) {
 	cols, err := rowReaders[0].Columns()
 	if err != nil {
 		return nil, err
+	}
+
+	for i := 1; i < len(rowReaders); i++ {
+		cs, err := rowReaders[i].Columns()
+		if err != nil {
+			return nil, err
+		}
+
+		if len(cols) != len(cs) {
+			return nil, fmt.Errorf("%w: each subquery must have same number of columns", ErrColumnMismatchInUnionStmt)
+		}
+
+		for c := 0; c < len(cols); c++ {
+			if cols[c].Type != cs[c].Type {
+				return nil, fmt.Errorf("%w: expecting type '%v' for column '%s'", ErrColumnMismatchInUnionStmt, cols[c].Type, cs[c].Column)
+			}
+		}
 	}
 
 	return &unionRowReader{
