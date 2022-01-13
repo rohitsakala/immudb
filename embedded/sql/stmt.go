@@ -575,7 +575,7 @@ func (stmt *UpsertIntoStmt) execAt(tx *SQLTx, params map[string]interface{}) (*S
 		}
 
 		if err == store.ErrKeyNotFound && pkMustExist {
-			return nil, err
+			return nil, fmt.Errorf("%w: specified value must be greater than current one", ErrInvalidValue)
 		}
 
 		if stmt.isInsert {
