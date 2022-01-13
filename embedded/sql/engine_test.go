@@ -4583,3 +4583,126 @@ func TestTemporalQueries(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
+func TestUnionOperator(t *testing.T) {
+	st, err := store.Open("union_queries", store.DefaultOptions())
+	require.NoError(t, err)
+	defer os.RemoveAll("union_queries")
+	defer st.Close()
+
+	engine, err := NewEngine(st, DefaultOptions().WithPrefix(sqlPrefix))
+	require.NoError(t, err)
+
+	_, _, err = engine.Exec("CREATE DATABASE db1", nil, nil)
+	require.NoError(t, err)
+
+	err = engine.SetDefaultDatabase("db1")
+	require.NoError(t, err)
+
+	_, _, err = engine.Exec("CREATE TABLE table1(id INTEGER AUTO_INCREMENT, title VARCHAR[50], PRIMARY KEY id)", nil, nil)
+	require.NoError(t, err)
+
+	_, _, err = engine.Exec("CREATE INDEX ON table1(title)", nil, nil)
+	require.NoError(t, err)
+
+	_, _, err = engine.Exec("CREATE TABLE table2(id INTEGER AUTO_INCREMENT, name VARCHAR[30], PRIMARY KEY id)", nil, nil)
+	require.NoError(t, err)
+
+	_, err = engine.Query("SELECT COUNT(*) as c FROM table1 UNION SELECT id, title FROM table1", nil, nil)
+	require.ErrorIs(t, err, ErrColumnMismatchInUnionStmt)
+
+	_, err = engine.Query("SELECT COUNT(*) as c FROM table1 UNION SELECT title FROM table1", nil, nil)
+	require.ErrorIs(t, err, ErrColumnMismatchInUnionStmt)
+
+	_, err = engine.InferParameters("SELECT title FROM table1 UNION SELECT name FROM table2", nil)
+	require.NoError(t, err)
+
+	rowCount := 10
+	for i := 0; i < rowCount; i++ {
+		_, _, err := engine.Exec("INSERT INTO table1(title) VALUES (@title)", map[string]interface{}{"title": fmt.Sprintf("title%d", i)}, nil)
+		require.NoError(t, err)
+
+		_, _, err = engine.Exec("INSERT INTO table2(name) VALUES (@name)", map[string]interface{}{"name": fmt.Sprintf("name%d", i)}, nil)
+		require.NoError(t, err)
+	}
+
+	t.Run("default union should filter out duplicated rows", func(t *testing.T) {
+		r, err := engine.Query("SELECT COUNT(*) as c FROM table1 UNION SELECT COUNT(*) FROM table1", nil, nil)
+		require.NoError(t, err)
+
+		row, err := r.Read()
+		require.NoError(t, err)
+		require.NotNil(t, row)
+		require.Equal(t, int64(rowCount), row.ValuesBySelector["(db1.table1.c)"].Value())
+
+		_, err = r.Read()
+		require.ErrorIs(t, err, ErrNoMoreRows)
+
+		err = r.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("union all should not filter out duplicated rows", func(t *testing.T) {
+		r, err := engine.Query("SELECT COUNT(*) as c FROM table1 UNION ALL SELECT COUNT(*) FROM table1", nil, nil)
+		require.NoError(t, err)
+
+		row, err := r.Read()
+		require.NoError(t, err)
+		require.NotNil(t, row)
+		require.Equal(t, int64(rowCount), row.ValuesBySelector["(db1.table1.c)"].Value())
+
+		row, err = r.Read()
+		require.NoError(t, err)
+		require.NotNil(t, row)
+		require.Equal(t, int64(rowCount), row.ValuesBySelector["(db1.table1.c)"].Value())
+
+		_, err = r.Read()
+		require.ErrorIs(t, err, ErrNoMoreRows)
+
+		err = r.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("union should filter out duplicated rows", func(t *testing.T) {
+		r, err := engine.Query("SELECT title FROM table1 order by title desc UNION SELECT title FROM table1", nil, nil)
+		require.NoError(t, err)
+
+		for i := 0; i < rowCount; i++ {
+			row, err := r.Read()
+			require.NoError(t, err)
+			require.NotNil(t, row)
+			require.Equal(t, fmt.Sprintf("title%d", rowCount-i-1), row.ValuesBySelector["(db1.table1.title)"].Value())
+		}
+
+		_, err = r.Read()
+		require.ErrorIs(t, err, ErrNoMoreRows)
+
+		err = r.Close()
+		require.NoError(t, err)
+	})
+
+	t.Run("union with subqueries over different tables", func(t *testing.T) {
+		r, err := engine.Query("SELECT title FROM table1 UNION SELECT name FROM table2", nil, nil)
+		require.NoError(t, err)
+
+		for i := 0; i < rowCount; i++ {
+			row, err := r.Read()
+			require.NoError(t, err)
+			require.NotNil(t, row)
+			require.Equal(t, fmt.Sprintf("title%d", i), row.ValuesBySelector["(db1.table1.title)"].Value())
+		}
+
+		for i := 0; i < rowCount; i++ {
+			row, err := r.Read()
+			require.NoError(t, err)
+			require.NotNil(t, row)
+			require.Equal(t, fmt.Sprintf("name%d", i), row.ValuesBySelector["(db1.table1.title)"].Value())
+		}
+
+		_, err = r.Read()
+		require.ErrorIs(t, err, ErrNoMoreRows)
+
+		err = r.Close()
+		require.NoError(t, err)
+	})
+}

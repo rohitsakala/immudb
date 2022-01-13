@@ -129,6 +129,17 @@ func (ur *unionRowReader) Read() (*Row, error) {
 			return nil, err
 		}
 
+		if ur.currReader > 0 {
+			// overwrite selectors using the ones from the first subquery
+			valuesBySelector := make(map[string]TypedValue, len(ur.cols))
+
+			for i, c := range ur.cols {
+				valuesBySelector[c.Selector()] = row.ValuesByPosition[i]
+			}
+
+			row.ValuesBySelector = valuesBySelector
+		}
+
 		return row, nil
 	}
 }
