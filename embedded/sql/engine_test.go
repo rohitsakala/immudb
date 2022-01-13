@@ -690,31 +690,43 @@ func TestAutoIncrementPK(t *testing.T) {
 	_, _, err = engine.Exec("UPSERT INTO table1(id, title) VALUES (1, 'name11')", nil, nil)
 	require.NoError(t, err)
 
+	_, _, err = engine.Exec("INSERT INTO table1(id, title) VALUES (3, 'name3')", nil, nil)
+	require.NoError(t, err)
+
+	_, _, err = engine.Exec("UPSERT INTO table1(id, title) VALUES (5, 'name5')", nil, nil)
+	require.NoError(t, err)
+
 	_, _, err = engine.Exec("INSERT INTO table1(id, title) VALUES (2, 'name2')", nil, nil)
+	require.ErrorIs(t, err, ErrInvalidValue)
+
+	_, _, err = engine.Exec("UPSERT INTO table1(id, title) VALUES (2, 'name2')", nil, nil)
+	require.ErrorIs(t, err, ErrInvalidValue)
+
+	_, _, err = engine.Exec("UPSERT INTO table1(id, title) VALUES (3, 'name33')", nil, nil)
 	require.NoError(t, err)
 
-	_, _, err = engine.Exec("UPSERT INTO table1(id, title) VALUES (3, 'name3')", nil, nil)
-	require.NoError(t, err)
+	_, _, err = engine.Exec("INSERT INTO table1(id, title) VALUES (5, 'name55')", nil, nil)
+	require.ErrorIs(t, err, store.ErrKeyAlreadyExists)
 
-	_, ctxs, err = engine.Exec("INSERT INTO table1(title) VALUES ('name4')", nil, nil)
+	_, ctxs, err = engine.Exec("INSERT INTO table1(title) VALUES ('name6')", nil, nil)
 	require.NoError(t, err)
 	require.Len(t, ctxs, 1)
 	require.True(t, ctxs[0].closed)
-	require.Equal(t, int64(4), ctxs[0].FirstInsertedPKs()["table1"])
-	require.Equal(t, int64(4), ctxs[0].LastInsertedPKs()["table1"])
+	require.Equal(t, int64(6), ctxs[0].FirstInsertedPKs()["table1"])
+	require.Equal(t, int64(6), ctxs[0].LastInsertedPKs()["table1"])
 	require.Equal(t, 1, ctxs[0].UpdatedRows())
 
 	_, ctxs, err = engine.Exec(`
 		BEGIN TRANSACTION;
-			INSERT INTO table1(title) VALUES ('name5');
-			INSERT INTO table1(title) VALUES ('name6');
+			INSERT INTO table1(title) VALUES ('name7');
+			INSERT INTO table1(title) VALUES ('name8');
 		COMMIT;
 	`, nil, nil)
 	require.NoError(t, err)
 	require.Len(t, ctxs, 1)
 	require.True(t, ctxs[0].closed)
-	require.Equal(t, int64(5), ctxs[0].FirstInsertedPKs()["table1"])
-	require.Equal(t, int64(6), ctxs[0].LastInsertedPKs()["table1"])
+	require.Equal(t, int64(7), ctxs[0].FirstInsertedPKs()["table1"])
+	require.Equal(t, int64(8), ctxs[0].LastInsertedPKs()["table1"])
 	require.Equal(t, 2, ctxs[0].UpdatedRows())
 }
 
