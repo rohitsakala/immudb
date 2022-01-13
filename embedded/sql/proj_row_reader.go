@@ -136,7 +136,7 @@ func (pr *projectedRowReader) colsBySelector() (map[string]ColDescriptor, error)
 
 		colDesc, ok := dsColDescriptors[encSel]
 		if !ok {
-			return nil, ErrColumnDoesNotExist
+			return nil, fmt.Errorf("%w (%s)", ErrColumnDoesNotExist, col)
 		}
 
 		if pr.tableAlias != "" {

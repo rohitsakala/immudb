@@ -82,7 +82,7 @@ func TestCreateTable(t *testing.T) {
 	require.NoError(t, err)
 
 	_, _, err = engine.Exec("USE DATABASE db1; CREATE TABLE table1 (name VARCHAR, PRIMARY KEY id)", nil, nil)
-	require.Equal(t, ErrColumnDoesNotExist, err)
+	require.ErrorIs(t, err, ErrColumnDoesNotExist)
 
 	_, _, err = engine.Exec("USE DATABASE db1; CREATE TABLE table1 (name VARCHAR, PRIMARY KEY name)", nil, nil)
 	require.ErrorIs(t, err, ErrLimitedKeyType)
@@ -100,7 +100,7 @@ func TestCreateTable(t *testing.T) {
 	require.NoError(t, err)
 
 	_, _, err = engine.Exec("CREATE TABLE table1 (id INTEGER, PRIMARY KEY id)", nil, nil)
-	require.Equal(t, ErrTableAlreadyExists, err)
+	require.ErrorIs(t, err, ErrTableAlreadyExists)
 
 	_, _, err = engine.Exec("CREATE TABLE IF NOT EXISTS table1 (id INTEGER, PRIMARY KEY id)", nil, nil)
 	require.NoError(t, err)
@@ -362,7 +362,7 @@ func TestAddColumn(t *testing.T) {
 	require.NoError(t, err)
 
 	_, _, err = engine.Exec("CREATE TABLE table1 (name VARCHAR, PRIMARY KEY id)", nil, nil)
-	require.Equal(t, ErrColumnDoesNotExist, err)
+	require.ErrorIs(t, err, ErrColumnDoesNotExist)
 
 	_, _, err = engine.Exec("ALTER TABLE table1 ADD COLUMN surname VARCHAR", nil, nil)
 	require.Equal(t, ErrNoSupported, err)
@@ -407,10 +407,10 @@ func TestCreateIndex(t *testing.T) {
 	require.Equal(t, ErrIndexAlreadyExists, err)
 
 	_, _, err = engine.Exec("CREATE INDEX ON table2(name)", nil, nil)
-	require.Equal(t, ErrTableDoesNotExist, err)
+	require.ErrorIs(t, err, ErrTableDoesNotExist)
 
 	_, _, err = engine.Exec("CREATE INDEX ON table1(title)", nil, nil)
-	require.Equal(t, ErrColumnDoesNotExist, err)
+	require.ErrorIs(t, err, ErrColumnDoesNotExist)
 
 	_, _, err = engine.Exec("INSERT INTO table1(id, name, age) VALUES (1, 'name1', 50)", nil, nil)
 	require.NoError(t, err)
@@ -440,7 +440,7 @@ func TestUpsertInto(t *testing.T) {
 	require.NoError(t, err)
 
 	_, _, err = engine.Exec("UPSERT INTO table1 (id, title) VALUES (1, 'title1')", nil, nil)
-	require.Equal(t, ErrTableDoesNotExist, err)
+	require.ErrorIs(t, err, ErrTableDoesNotExist)
 
 	_, _, err = engine.Exec(`CREATE TABLE table1 (
 								id INTEGER,
@@ -460,7 +460,7 @@ func TestUpsertInto(t *testing.T) {
 	require.ErrorIs(t, err, ErrNotNullableColumnCannotBeNull)
 
 	_, _, err = engine.Exec("UPSERT INTO table1 (id, age) VALUES (1, 50)", nil, nil)
-	require.Equal(t, ErrColumnDoesNotExist, err)
+	require.ErrorIs(t, err, ErrColumnDoesNotExist)
 
 	_, _, err = engine.Exec("UPSERT INTO table1 (id, title, active) VALUES (@id, 'title1', true)", nil, nil)
 	require.Equal(t, ErrMissingParameter, err)
@@ -961,7 +961,7 @@ func TestTransactions(t *testing.T) {
 			CREATE INDEX ON table2(title);
 		COMMIT;
 		`, nil, nil)
-	require.Equal(t, ErrTableDoesNotExist, err)
+	require.ErrorIs(t, err, ErrTableDoesNotExist)
 
 	_, _, err = engine.Exec(`
 		BEGIN TRANSACTION;
@@ -1199,7 +1199,7 @@ func TestQuery(t *testing.T) {
 	require.Equal(t, ErrDatabaseDoesNotExist, err)
 
 	_, err = engine.Query("SELECT id FROM table1", nil, nil)
-	require.Equal(t, ErrTableDoesNotExist, err)
+	require.ErrorIs(t, err, ErrTableDoesNotExist)
 
 	_, _, err = engine.Exec(`CREATE TABLE table1 (
 								id INTEGER,
@@ -2352,10 +2352,10 @@ func TestOrderBy(t *testing.T) {
 	require.Equal(t, ErrLimitedOrderBy, err)
 
 	_, err = engine.Query("SELECT id, title, age FROM table2 ORDER BY title", nil, nil)
-	require.Equal(t, ErrTableDoesNotExist, err)
+	require.ErrorIs(t, err, ErrTableDoesNotExist)
 
 	_, err = engine.Query("SELECT id, title, age FROM table1 ORDER BY amount", nil, nil)
-	require.Equal(t, ErrColumnDoesNotExist, err)
+	require.ErrorIs(t, err, ErrColumnDoesNotExist)
 
 	_, _, err = engine.Exec("CREATE INDEX ON table1(title)", nil, nil)
 	require.NoError(t, err)
@@ -3156,7 +3156,7 @@ func TestJoins(t *testing.T) {
 		require.NoError(t, err)
 
 		_, err = r.Read()
-		require.Equal(t, ErrTableDoesNotExist, err)
+		require.ErrorIs(t, err, ErrTableDoesNotExist)
 
 		err = r.Close()
 		require.NoError(t, err)
@@ -3778,10 +3778,10 @@ func TestInferParametersInvalidCases(t *testing.T) {
 	require.Equal(t, ErrInvalidNumberOfValues, err)
 
 	_, err = engine.InferParameters("INSERT INTO mytable1(id, title) VALUES (@param1, @param2)", nil)
-	require.Equal(t, ErrTableDoesNotExist, err)
+	require.ErrorIs(t, err, ErrTableDoesNotExist)
 
 	_, err = engine.InferParameters("INSERT INTO mytable(id, note) VALUES (@param1, @param2)", nil)
-	require.Equal(t, ErrColumnDoesNotExist, err)
+	require.ErrorIs(t, err, ErrColumnDoesNotExist)
 
 	_, err = engine.InferParameters("SELECT * FROM mytable WHERE id > @param1 AND (@param1 OR active)", nil)
 	require.Equal(t, ErrInferredMultipleTypes, err)

@@ -15,7 +15,11 @@ limitations under the License.
 */
 package sql
 
-import "github.com/codenotary/immudb/embedded/store"
+import (
+	"fmt"
+
+	"github.com/codenotary/immudb/embedded/store"
+)
 
 type groupedRowReader struct {
 	rowReader RowReader
@@ -116,7 +120,7 @@ func (gr *groupedRowReader) colsBySelector() (map[string]ColDescriptor, error) {
 
 		colDesc, ok := colDescriptors[EncodeSelector("", db, table, col)]
 		if !ok {
-			return nil, ErrColumnDoesNotExist
+			return nil, fmt.Errorf("%w (%s)", ErrColumnDoesNotExist, col)
 		}
 
 		if aggFn == MAX || aggFn == MIN {
