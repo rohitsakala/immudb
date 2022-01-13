@@ -18,6 +18,9 @@ package integration
 
 import (
 	"context"
+	"os"
+	"testing"
+
 	"github.com/codenotary/immudb/pkg/api/schema"
 	ic "github.com/codenotary/immudb/pkg/client"
 	"github.com/codenotary/immudb/pkg/client/errors"
@@ -25,8 +28,6 @@ import (
 	"github.com/codenotary/immudb/pkg/server/servertest"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
-	"os"
-	"testing"
 )
 
 func TestTransaction_SetAndGet(t *testing.T) {
@@ -106,7 +107,7 @@ func TestTransaction_Rollback(t *testing.T) {
 
 	res, err := tx1.SQLQuery(context.TODO(), "SELECT * FROM table1", nil)
 	require.Error(t, err)
-	require.Equal(t, "table does not exist", err.Error())
+	require.Equal(t, "table does not exist (table1)", err.Error())
 	require.Nil(t, res)
 
 	err = client.CloseSession(context.TODO())
