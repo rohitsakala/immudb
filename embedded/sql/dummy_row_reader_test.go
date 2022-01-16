@@ -33,8 +33,8 @@ func (r *dummyRowReader) Tx() *SQLTx {
 	return nil
 }
 
-func (r *dummyRowReader) Database() *Database {
-	return nil
+func (r *dummyRowReader) Database() string {
+	return "db1"
 }
 
 func (r *dummyRowReader) TableAlias() string {

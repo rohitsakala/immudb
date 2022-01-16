@@ -25,7 +25,7 @@ import (
 
 type RowReader interface {
 	Tx() *SQLTx
-	Database() *Database
+	Database() string
 	TableAlias() string
 	SetParameters(params map[string]interface{}) error
 	Read() (*Row, error)
@@ -250,8 +250,8 @@ func (r *rawRowReader) Tx() *SQLTx {
 	return r.tx
 }
 
-func (r *rawRowReader) Database() *Database {
-	return r.table.db
+func (r *rawRowReader) Database() string {
+	return r.table.db.name
 }
 
 func (r *rawRowReader) TableAlias() string {
