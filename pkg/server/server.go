@@ -388,7 +388,7 @@ func (s *ImmuServer) loadSystemDatabase(dataDir string, remoteStorage remotestor
 
 	_, err := s.OS.Stat(systemDBRootDir)
 	if err == nil {
-		s.sysDB, err = database.OpenDB(op, s.Logger)
+		s.sysDB, err = database.OpenDB(s.multidbHandler(), op, s.Logger)
 		if err != nil {
 			s.Logger.Errorf("Database '%s' was not correctly initialized.\n"+
 				"Use replication to recover from external source or start without data folder.", op.GetDBName())
@@ -414,7 +414,7 @@ func (s *ImmuServer) loadSystemDatabase(dataDir string, remoteStorage remotestor
 		return err
 	}
 
-	s.sysDB, err = database.NewDB(op, s.Logger)
+	s.sysDB, err = database.NewDB(s.multidbHandler(), op, s.Logger)
 	if err != nil {
 		return err
 	}
@@ -460,7 +460,7 @@ func (s *ImmuServer) loadDefaultDatabase(dataDir string, remoteStorage remotesto
 
 	_, err := s.OS.Stat(defaultDbRootDir)
 	if err == nil {
-		db, err := database.OpenDB(op, s.Logger)
+		db, err := database.OpenDB(s.multidbHandler(), op, s.Logger)
 		if err != nil {
 			s.Logger.Errorf("Database '%s' was not correctly initialized.\n"+
 				"Use replication to recover from external source or start without data folder.", op.GetDBName())
@@ -488,7 +488,7 @@ func (s *ImmuServer) loadDefaultDatabase(dataDir string, remoteStorage remotesto
 		return err
 	}
 
-	db, err := database.NewDB(op, s.Logger)
+	db, err := database.NewDB(s.multidbHandler(), op, s.Logger)
 	if err != nil {
 		return err
 	}
@@ -566,7 +566,7 @@ func (s *ImmuServer) loadUserDatabases(dataDir string, remoteStorage remotestora
 			op.GetStoreOptions().WithTimeFunc(func() time.Time { return time.Now() })
 		}
 
-		db, err := database.OpenDB(op, s.Logger)
+		db, err := database.OpenDB(s.multidbHandler(), op, s.Logger)
 		if err != nil {
 			return fmt.Errorf("could not open database '%s'. Reason: %w", dbname, err)
 		}
@@ -861,7 +861,7 @@ func (s *ImmuServer) CreateDatabaseWith(ctx context.Context, req *schema.Databas
 		op.GetStoreOptions().WithTimeFunc(func() time.Time { return time.Now() })
 	}
 
-	db, err := database.NewDB(op, s.Logger)
+	db, err := database.NewDB(s.multidbHandler(), op, s.Logger)
 	if err != nil {
 		return nil, err
 	}

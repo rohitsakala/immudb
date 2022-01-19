@@ -17,6 +17,7 @@ limitations under the License.
 package database
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
@@ -86,6 +87,8 @@ type DB interface {
 	ZScan(req *schema.ZScanRequest) (*schema.ZEntries, error)
 
 	// SQL-related
+	NewSQLTx(ctx context.Context) (*sql.SQLTx, error)
+
 	SQLExec(req *schema.SQLExecRequest, tx *sql.SQLTx) (ntx *sql.SQLTx, ctxs []*sql.SQLTx, err error)
 	SQLExecPrepared(stmts []sql.SQLStmt, namedParams []*schema.NamedParam, tx *sql.SQLTx) (ntx *sql.SQLTx, ctxs []*sql.SQLTx, err error)
 
@@ -134,7 +137,7 @@ type db struct {
 }
 
 // OpenDB Opens an existing Database from disk
-func OpenDB(op *Options, log logger.Logger) (DB, error) {
+func OpenDB(multidbHandler sql.MultiDBHandler, op *Options, log logger.Logger) (DB, error) {
 	log.Infof("Opening database '%s' {replica = %v}...", op.dbName, op.replica)
 
 	var err error
@@ -161,6 +164,8 @@ func OpenDB(op *Options, log logger.Logger) (DB, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	dbi.sqlEngine.SetMultiDBHandler(multidbHandler)
 
 	if op.replica {
 		dbi.Logger.Infof("Database '%s' {replica = %v} successfully opened", op.dbName, op.replica)
@@ -233,7 +238,7 @@ func (d *db) initSQLEngine() error {
 }
 
 // NewDB Creates a new Database along with it's directories and files
-func NewDB(op *Options, log logger.Logger) (DB, error) {
+func NewDB(multidbHandler sql.MultiDBHandler, op *Options, log logger.Logger) (DB, error) {
 	log.Infof("Creating database '%s' {replica = %v}...", op.dbName, op.replica)
 
 	var err error
@@ -263,6 +268,8 @@ func NewDB(op *Options, log logger.Logger) (DB, error) {
 	if err != nil {
 		return nil, logErr(dbi.Logger, "Unable to open database: %s", err)
 	}
+
+	dbi.sqlEngine.SetMultiDBHandler(multidbHandler)
 
 	if !op.replica {
 		_, _, err = dbi.sqlEngine.ExecPreparedStmts([]sql.SQLStmt{&sql.CreateDatabaseStmt{DB: dbInstanceName}}, nil, nil)
