@@ -16,6 +16,7 @@ limitations under the License.
 package database
 
 import (
+	"context"
 	"crypto/sha256"
 	"log"
 	"os"
@@ -25,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/codenotary/immudb/embedded/sql"
 	"github.com/codenotary/immudb/embedded/store"
 	"github.com/codenotary/immudb/pkg/api/schema"
 	"github.com/codenotary/immudb/pkg/fs"
@@ -57,7 +59,7 @@ func makeDb() (DB, func()) {
 }
 
 func makeDbWith(opts *Options) (DB, func()) {
-	db, err := NewDB(nil, opts, logger.NewSimpleLogger("immudb ", os.Stderr))
+	db, err := NewDB(&dummyMultidbHandler{}, opts, logger.NewSimpleLogger("immudb ", os.Stderr))
 	if err != nil {
 		log.Fatalf("Error creating Db instance %s", err)
 	}
@@ -71,6 +73,21 @@ func makeDbWith(opts *Options) (DB, func()) {
 			log.Fatal(err)
 		}
 	}
+}
+
+type dummyMultidbHandler struct {
+}
+
+func (h *dummyMultidbHandler) ListDatabases(ctx context.Context) ([]string, error) {
+	return nil, sql.ErrNoSupported
+}
+
+func (h *dummyMultidbHandler) CreateDatabase(ctx context.Context, db string) error {
+	return sql.ErrNoSupported
+}
+
+func (h *dummyMultidbHandler) UseDatabase(ctx context.Context, db string) error {
+	return sql.ErrNoSupported
 }
 
 func TestDefaultDbCreation(t *testing.T) {
