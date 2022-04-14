@@ -17,7 +17,7 @@ Thus, the instructions on the current document assume that just the `master` bra
 When building final binaries, a matching release of the [webconsole] will be used.
 Make sure that the appropriate version is released there.
 
-Also make sure that the webconsole/dist folder does not exist,
+Also make sure that the `webconsole/dist` folder does not exist,
 any existing content will be used instead of the released webconsole version:
 
 ```sh
@@ -30,10 +30,11 @@ make clean
 
 Edit `Makefile` and modify the `VERSION` and `DEFAULT_WEBCONSOLE_VERSION` variables:
 
-```
+```Makefile
 VERSION=X.Y.Z
 DEFAULT_WEBCONSOLE_VERSION=A.B.C
 ```
+
 > N.B. Omit the `v` prefix.
 
 Then run:
@@ -42,12 +43,16 @@ Then run:
 make CHANGELOG.md.next-tag
 ```
 
-Be sure to also bump version of the helm chart, in `helm/Chart.yaml`
-```
+The generated changelog update may be too large - make sure to stge only the changes relevant to the current release.
+
+For non-RC versions: bump the version of the helm chart, in `helm/Chart.yaml`
+
+```yaml
 [...]
 version: a.b.c
 appVersion: "X.Y.Z"
 ```
+
 The first line (`version`) is the version of the helm chart, the second the version of immudb.
 We may want to keep them aligned.
 
@@ -81,11 +86,13 @@ WEBCONSOLE=default  make dist
 ```
 
 > Distribution files will be created into the `dist` directory.
->
+
 ## 5. Create a pre-release in GitHub
+
 On GitHub, [draft a new release](https://github.com/vchain-us/immudb/releases) and upload the `dist` files using the follwing template
 
 > Assets will not be available until the release is published so postpone links generation.
+
 ```md
 # Changelog
 
@@ -120,25 +127,14 @@ File | SHA256
 
 Each file generated in the `dist` directory should be quickly checked in all architectures.
 For every platform do the following:
- * Run immudb server, make sure it works as expected
- * Check the webconsole - make sure it shows correct versions on the footer after login
- * connect to the immudb server with immuclient and perform few get/set operations
- * connect to the immudb server with immuadmin and perform few operations such as creating and listing databases
 
-## 7. Notarize git repository and binaries
-After completing tests notarize git repository and dist files using the immudb@codenotary.com account:
+* Run immudb server, make sure it works as expected
+* Check the webconsole - make sure it shows correct versions on the footer after login
+* connect to the immudb server with immuclient and perform few get/set operations
+* connect to the immudb server with immuadmin and perform few operations such as creating and listing databases
 
-```sh
-export CAS_NOTARIZATION_PASSWORD
-read -s CAS_NOTARIZATION_PASSWORD
+## 7. Push and edit the release on github
 
-cas login
-cas n -p git://.
-
-make dist/sign
-```
-
-## 8. Push and edit the release on github
 Now it's possible to generate link to the binaries in github pre-release page.
 
 Push your commits and tag:
@@ -147,16 +143,18 @@ Push your commits and tag:
 git push
 git push --tags
 ```
+
 Then it's needed to choose the appropriate tag on the newly created release.
 
 > From now on, your relase will be publicy visible, and github actions should start building docker images for `immudb`.
 
 Mark this tag as a `pre-release` for now.
 
-Do the final check of uploaded binaries by doing manual smoke tests,
-once everything works correctly, uncheck the `pre-release` mark.
+Do the final check of uploaded binaries by doing manual smoke tests.
 
-## 9. Create documentation for the version
+Non-RC versions: Once everything works correctly, uncheck the `pre-release` mark.
+
+## 8. Non-RC versions: Create documentation for the version
 
 Documentation is kept inside the [immudb.io repo](https://github.com/codenotary/immudb.io).
 
@@ -170,8 +168,8 @@ Once those changes end up in master, the documentation will be compiled and depl
 [index.js]: https://github.com/codenotary/immudb.io/blob/master/src/.vuepress/theme/util/index.js#L242
 [enhanceApp.js]: https://github.com/codenotary/immudb.io/blob/master/src/.vuepress/enhanceApp.js#L27
 
-## 10. Update immudb readme on docker hub
+## 10. Non-RC versions: Update immudb readme on docker hub
 
 Once the release is done, make sure that the readme in docker hub are up-to-date.
-For immudb please edit  the Readme in https://hub.docker.com/repository/docker/codenotary/immudb
-and synchronzie it with README.md from this repository.
+For immudb please edit  the Readme in <https://hub.docker.com/repository/docker/codenotary/immudb>
+and synchronize it with README.md from this repository.
